@@ -36,6 +36,11 @@ export function calculateDoorHeight(topShelf, bottomShelf, reveal) {
     return Math.max(0, height);
 }
 
+export function calculateDoorHeightFromSpan(span, reveal) {
+    const height = parseFloat(span) - (2 * parseFloat(reveal));
+    return Math.max(0, height);
+}
+
 export function getRecommendedHinges(height) {
     if (height < 36) return 2;
     if (height < 72) return 3;
