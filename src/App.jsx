@@ -1,5 +1,9 @@
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import { Download } from 'lucide-react';
+import DoorSchema from './components/DoorSchema';
 import {
   calculateDoorHeight,
   calculateDoorHeightFromSpan,
@@ -10,6 +14,8 @@ import {
 
 function App() {
   const [mode, setMode] = useState('shelf'); // 'shelf' | 'span'
+  const [jobName, setJobName] = useState('');
+  const exportRef = useRef();
 
   // Inputs
   const [topShelf, setTopShelf] = useState('');
@@ -33,6 +39,43 @@ function App() {
   const locations = useMemo(() => {
     return calculateHingeLocations(doorHeight, reveal, numHinges);
   }, [doorHeight, reveal, numHinges]);
+
+  const handleExport = async () => {
+    if (!exportRef.current) return;
+
+    try {
+      // Use html2canvas to capture the hidden print template
+      const canvas = await html2canvas(exportRef.current, {
+        scale: 2, // Higher scale for better quality
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+
+      // Create PDF - A4 size closely matches our template width usually, 
+      // but let's just make the PDF match the canvas aspect ratio to be safe or standard A4.
+      // Standard A4 at 72 DPI is 595 x 842 pixels.
+      // We'll map the canvas to fit on an A4 page.
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      // const pdfHeight = pdf.internal.pageSize.getHeight(); // Unused
+
+      const contentWidth = canvas.width;
+      const contentHeight = canvas.height;
+
+      // Calculate scaling to fit width
+      const ratio = pdfWidth / contentWidth;
+      const scaledHeight = contentHeight * ratio;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, scaledHeight);
+      pdf.save(jobName ? `${jobName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_hinge_layout.pdf` : 'door_hinge_layout.pdf');
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert("Failed to create PDF export.");
+    }
+  };
 
   return (
     <div className="container app-layout">
@@ -69,6 +112,18 @@ function App() {
         </div>
 
         <div className="card">
+
+          {/* Job Name Input */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label className="label">Job Name (Optional)</label>
+            <input
+              type="text"
+              className="input"
+              value={jobName}
+              onChange={(e) => setJobName(e.target.value)}
+              placeholder="e.g. Kitchen Cabinets"
+            />
+          </div>
 
           {/* Mode Switcher */}
           <div className="radio-group" style={{ marginBottom: '1.5rem' }}>
@@ -177,7 +232,25 @@ function App() {
 
           {/* Results */}
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
-            <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem' }}>Results</h2>
+            <div className="flex justify-between items-center" style={{ marginBottom: '1rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Results</h2>
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-2"
+                style={{
+                  background: 'var(--primary)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: 600
+                }}
+              >
+                <Download size={16} /> Export PDF
+              </button>
+            </div>
 
             <div className="result-row">
               <span className="text-muted">Calculated Door Height</span>
@@ -205,9 +278,17 @@ function App() {
             </div>
           </div>
 
+          {/* On-screen Visual Reference */}
+          {locations.length > 0 && (
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '2rem', marginTop: '2rem' }}>
+              <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem' }}>Visual Reference</h2>
+              <div style={{ background: '#fff', borderRadius: '8px', padding: '1rem' }}>
+                <DoorSchema doorHeight={doorHeight} locations={locations} />
+              </div>
+            </div>
+          )}
+
         </div>
-
-
 
         <div style={{ marginTop: '2rem', textAlign: 'center', opacity: 0.5, fontSize: '0.875rem' }}>
           Designed & built by Farid
@@ -232,6 +313,76 @@ function App() {
               <span className="info-highlight">4 Bores</span>
             </li>
           </ul>
+        </div>
+      </div>
+
+      {/* HIDDEN EXPORT TEMPLATE - This is captured by html2canvas */}
+      <div style={{ position: 'fixed', left: '-10000px', top: 0 }}>
+        <div
+          ref={exportRef}
+          style={{
+            width: '800px', // Fixed width for A4 ratio consistency
+            padding: '40px',
+            background: 'white',
+            color: '#1e293b',
+            fontFamily: 'sans-serif'
+          }}
+        >
+          <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '20px', marginBottom: '30px' }}>
+            <h1 style={{ margin: 0, color: '#0f172a', fontSize: '24px' }}>
+              {jobName ? `Job Name: ${jobName}` : 'Job Name:'}
+            </h1>
+            <p style={{ margin: '5px 0 0 0', color: '#64748b' }}>Generated on {new Date().toLocaleDateString()}</p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '40px' }}>
+            {/* Left Column: Data */}
+            <div style={{ flex: '1' }}>
+              <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', marginBottom: '30px' }}>
+                <h3 style={{ marginTop: 0, marginBottom: '15px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Specifications</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div style={{ color: '#64748b' }}>Door Height:</div>
+                  <div style={{ fontWeight: 'bold' }}>{formatLength(doorHeight)}</div>
+
+                  <div style={{ color: '#64748b' }}>Reveal:</div>
+                  <div style={{ fontWeight: 'bold' }}>{reveal}"</div>
+
+                  <div style={{ color: '#64748b' }}>Hinge Count:</div>
+                  <div style={{ fontWeight: 'bold' }}>{numHinges}</div>
+                </div>
+              </div>
+
+              <h3 style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>Hinge Locations</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+                <thead>
+                  <tr style={{ background: '#f1f5f9' }}>
+                    <th style={{ textAlign: 'left', padding: '10px', fontSize: '14px', borderBottom: '2px solid #e2e8f0' }}>Location</th>
+                    <th style={{ textAlign: 'right', padding: '10px', fontSize: '14px', borderBottom: '2px solid #e2e8f0' }}>Distance from Top</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {locations.map((l, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '12px 10px' }}>{l.note}</td>
+                      <td style={{ textAlign: 'right', padding: '12px 10px', fontFamily: 'monospace', fontSize: '14px' }}>
+                        {formatLength(l.pos)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div style={{ marginTop: '40px', fontSize: '12px', color: '#94a3b8' }}>
+                Designed & built by Farid
+              </div>
+            </div>
+
+            {/* Right Column: Schema */}
+            <div style={{ flex: '1', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '20px' }}>
+              <h3 style={{ marginTop: 0, textAlign: 'center', color: '#64748b', fontSize: '14px' }}>Schematic Diagram</h3>
+              <DoorSchema doorHeight={doorHeight} locations={locations} />
+            </div>
+          </div>
         </div>
       </div>
 
