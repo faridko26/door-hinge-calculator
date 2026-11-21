@@ -48,12 +48,13 @@ export function getRecommendedHinges(height) {
 }
 
 export function getOffsets(reveal) {
-    // reveal is string "0.5", "0.125", "0"
+    // reveal is string "0.5", "0.4375", "0.125", "0"
     switch (reveal) {
-        case "0.5": return 3.00;
-        case "0.125": return 3.375;
-        case "0": return 3.50;
-        default: return 3.00; // Default or error
+        case "0.5":    return 3.00;    // 1/2" reveal (full overlay)
+        case "0.4375": return 3.0625;  // 7/16" reveal (half overlay)
+        case "0.125":  return 3.375;   // 1/8" reveal (full overlay)
+        case "0":      return 3.50;    // No reveal
+        default:       return 3.00;
     }
 }
 

@@ -191,19 +191,25 @@ function App() {
                 className={`radio-option ${reveal === '0.5' ? 'active' : ''}`}
                 onClick={() => setReveal('0.5')}
               >
-                1/2" Reveal
+                1/2&quot; Reveal
+              </div>
+              <div
+                className={`radio-option ${reveal === '0.4375' ? 'active' : ''}`}
+                onClick={() => setReveal('0.4375')}
+              >
+                7/16&quot; Reveal (Half Overlay)
               </div>
               <div
                 className={`radio-option ${reveal === '0.125' ? 'active' : ''}`}
                 onClick={() => setReveal('0.125')}
               >
-                1/8" Reveal
+                1/8&quot; Reveal (Full Overlay)
               </div>
               <div
                 className={`radio-option ${reveal === '0' ? 'active' : ''}`}
                 onClick={() => setReveal('0')}
               >
-                No Reveal (0")
+                No Reveal (0&quot;)
               </div>
             </div>
           </div>
@@ -345,7 +351,9 @@ function App() {
                   <div style={{ fontWeight: 'bold' }}>{formatLength(doorHeight)}</div>
 
                   <div style={{ color: '#64748b' }}>Reveal:</div>
-                  <div style={{ fontWeight: 'bold' }}>{reveal}"</div>
+                  <div style={{ fontWeight: 'bold' }}>
+                    {reveal === '0.5' ? '1/2"' : reveal === '0.4375' ? '7/16" (Half Overlay)' : reveal === '0.125' ? '1/8" (Full Overlay)' : '0" (No Reveal)'}
+                  </div>
 
                   <div style={{ color: '#64748b' }}>Hinge Count:</div>
                   <div style={{ fontWeight: 'bold' }}>{numHinges}</div>
